@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090711">
+<title>LOVIE.MP3</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 25px;
+  background: #090711;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 35px;
+}
+
+.logo {
+  font-size: 27px;
+  font-weight: bold;
+  color: #c58aff;
+}
+
+.logo span {
+  color: white;
+}
+
+.subtitle {
+  color: #999;
+  font-size: 12px;
+  letter-spacing: 3px;
+}
+
+h2 {
+  font-size: 23px;
+  margin-top: 35px;
+}
+
+.cover {
+  width: 230px;
+  height: 230px;
+  margin: 35px auto 25px;
+  border-radius: 25px;
+  background: linear-gradient(135deg,#5e239c,#bd6cff,#171025);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 35px #a34dff55;
+  font-size: 75px;
+}
+
+.song-info {
+  text-align: center;
+}
+
+.song-info h2 {
+  margin: 10px 0;
+}
+
+.song-info p {
+  color: #aaa;
+}
+
+.progress {
+  width: 100%;
+  accent-color: #c58aff;
+  margin-top: 20px;
+}
+
+.time {
+  display: flex;
+  justify-content: space-between;
+  color: #aaa;
+  font-size: 12px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin: 25px 0;
+}
+
+button {
+  border: none;
+  color: white;
+  background: transparent;
+  font-size: 23px;
+  cursor: pointer;
+}
+
+.play {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  background: #b56cff;
+  color: #090711;
+  font-size: 28px;
+}
+
+.library-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 15px;
+  background: #21152f;
+  color: #d9aaff;
+  margin-top: 20px;
+  font-size: 16px;
+  border: 1px solid #7540a1;
+}
+
+#musicFiles {
+  display: none;
+}
+
+.playlist {
+  margin-top: 30px;
+}
+
+.song {
+  padding: 15px;
+  margin: 10px 0;
+  background: #171321;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.song.active {
+  border: 1px solid #b56cff;
+  color: #d5a0ff;
+}
+
+.song small {
+  color: #999;
+}
+
+footer {
+  text-align: center;
+  color: #777;
+  margin-top: 40px;
+  font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <div class="logo">LOVIE<span>.MP3</span></div>
+    <div class="subtitle">YOUR MUSIC WORLD</div>
+  </div>
+  <div style="font-size:25px">♫</div>
+</header>
+
+<h2>Now Playing</h2>
+
+<div class="cover">♫</div>
+
+<div class="song-info">
+  <h2 id="songName">No Song Selected</h2>
+  <p id="artist">Choose your favourite music</p>
+</div>
+
+<audio id="audio"></audio>
+
+<input type="range" id="progress"
+class="progress" value="0" min="0" max="100">
+
+<div class="time">
+  <span id="currentTime">0:00</span>
+  <span id="duration">0:00</span>
+</div>
+
+<div class="controls">
+  <button onclick="prevSong()">⏮</button>
+  <button class="play" id="playBtn"
+  onclick="playPause()">▶</button>
+  <button onclick="nextSong()">⏭</button>
+</div>
+
+<button class="library-btn"
+onclick="document.getElementById('musicFiles').click()">
+  ＋ ADD YOUR MUSIC
+</button>
+
+<input type="file" id="musicFiles"
+accept="audio/*" multiple>
+
+<div class="playlist">
+  <h2>Your Playlist ♡</h2>
+  <div id="playlist">
+    <p style="color:#888">No music added yet.</p>
+  </div>
+</div>
+
+<footer>
+  Made with ♡ | LOVIE.MP3
+</footer>
+
+<script>
+const audio = document.getElementById("audio");
+const fileInput = document.getElementById("musicFiles");
+const playlist = document.getElementById("playlist");
+
+let songs = [];
+let currentIndex = 0;
+
+function formatTime(seconds) {
+  if (!isFinite(seconds)) return "0:00";
+  const min = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60);
+  return min + ":" + String(sec).padStart(2, "0");
+}
+
+fileInput.addEventListener("change", function() {
+  const files = Array.from(this.files);
+
+  files.forEach(file => {
+    songs.push({
+      name: file.name.replace(/\.[^/.]+$/, ""),
+      url: URL.createObjectURL(file)
+    });
+  });
+
+  renderPlaylist();
+
+  if (songs.length > 0 && audio.src === "") {
+    loadSong(0);
+  }
+
+  this.value = "";
+});
+
+function renderPlaylist() {
+  playlist.innerHTML = "";
+
+  songs.forEach((song, index) => {
+    const item = document.createElement("div");
+    item.className = "song" +
+      (index === currentIndex ? " active" : "");
+
+    const name = document.createElement("span");
+    name.textContent = "♫ " + song.name;
+
+    const number = document.createElement("small");
+    number.textContent = "▶";
+
+    item.appendChild(name);
+    item.appendChild(number);
+
+    item.onclick = () => {
+      loadSong(index);
+      playSong();
+    };
+
+    playlist.appendChild(item);
+  });
+}
+
+function loadSong(index) {
+  if (!songs.length) return;
+
+  currentIndex = (index + songs.length) % songs.length;
+
+  audio.src = songs[currentIndex].url;
+
+  document.getElementById("songName").textContent =
+    songs[currentIndex].name;
+
+  document.getElementById("artist").textContent =
+    "LOVIE.MP3 • Your Music";
+
+  renderPlaylist();
+}
+
+function playSong() {
+  if (!songs.length) return;
+
+  audio.play().then(() => {
+    document.getElementById("playBtn").textContent = "Ⅱ";
+  }).catch(() => {
+    document.getElementById("playBtn").textContent = "▶";
+  });
+}
+
+function playPause() {
+  if (!songs.length) {
+    fileInput.click();
+    return;
+  }
+
+  if (audio.paused) {
+    playSong();
+  } else {
+    audio.pause();
+    document.getElementById("playBtn").textContent = "▶";
+  }
+}
+
+function nextSong() {
+  if (!songs.length) return;
+  loadSong(currentIndex + 1);
+  playSong();
+}
+
+function prevSong() {
+  if (!songs.length) return;
+  loadSong(currentIndex - 1);
+  playSong();
+}
+
+audio.addEventListener("timeupdate", () => {
+  if (audio.duration) {
+    document.getElementById("progress").value =
+      (audio.currentTime / audio.duration) * 100;
+  }
+
+  document.getElementById("currentTime").textContent =
+    formatTime(audio.currentTime);
+
+  document.getElementById("duration").textContent =
+    formatTime(audio.duration);
+});
+
+document.getElementById("progress").addEventListener(
+  "input", function() {
+    if (audio.duration) {
+      audio.currentTime = (this.value / 100) * audio.duration;
+    }
+  }
+);
+
+audio.addEventListener("ended", nextSong);
+</script>
+
+</body>
+</html>
