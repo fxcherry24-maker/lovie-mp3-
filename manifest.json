@@ -1,0 +1,16 @@
+{
+  "name": "LOVIE.MP3",
+  "short_name": "LOVIE",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090711",
+  "theme_color": "#090711",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
